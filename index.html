@@ -1,1 +1,885 @@
-<h1>Azzok Docs</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Azzok — Documentation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Token System ──────────────────────────────────────────── */
+    :root {
+      --bg:        #0d0f14;
+      --surface:   #141720;
+      --border:    #232738;
+      --accent:    #5b6af0;
+      --accent2:   #9b6af0;
+      --text:      #d8dce8;
+      --muted:     #6b718e;
+      --heading:   #eef0f8;
+      --code-bg:   #0a0c11;
+      --tag-bg:    #1a1f32;
+      --success:   #3ecf7a;
+      --warn:      #f0a05b;
+
+      --radius:    10px;
+      --mono: 'IBM Plex Mono', monospace;
+      --sans: 'Inter', sans-serif;
+      --display: 'Syne', sans-serif;
+    }
+
+    /* ── Reset ─────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    /* ── Layout ────────────────────────────────────────────────── */
+    .page-grid {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      min-height: 100vh;
+    }
+
+    /* ── Sidebar ───────────────────────────────────────────────── */
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 2rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+    .sidebar-logo {
+      font-family: var(--display);
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--heading);
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .sidebar-logo span {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .logo-badge {
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      background: var(--tag-bg);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 2px 6px;
+      border-radius: 4px;
+      -webkit-text-fill-color: var(--muted);
+    }
+    .nav-group { display: flex; flex-direction: column; gap: 0.25rem; }
+    .nav-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      padding: 0 0.5rem;
+      margin-bottom: 0.25rem;
+    }
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.5rem;
+      border-radius: 6px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      transition: background 0.15s, color 0.15s;
+    }
+    .nav-link:hover, .nav-link.active {
+      background: var(--tag-bg);
+      color: var(--heading);
+    }
+    .nav-link .dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--border);
+      flex-shrink: 0;
+    }
+    .nav-link.active .dot { background: var(--accent); }
+
+    /* ── Main Content ──────────────────────────────────────────── */
+    .main {
+      padding: 3rem 4rem 6rem;
+      max-width: 860px;
+    }
+
+    /* ── Hero ──────────────────────────────────────────────────── */
+    .hero {
+      padding-bottom: 3rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 3rem;
+    }
+    .hero-eyebrow {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: var(--accent);
+      letter-spacing: 0.08em;
+      margin-bottom: 0.75rem;
+    }
+    h1 {
+      font-family: var(--display);
+      font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 800;
+      color: var(--heading);
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      margin-bottom: 1rem;
+    }
+    h1 em {
+      font-style: normal;
+      background: linear-gradient(135deg, var(--accent) 30%, var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero-desc {
+      font-size: 1.05rem;
+      color: var(--muted);
+      max-width: 560px;
+      margin-bottom: 1.75rem;
+    }
+    .hero-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .badge {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      padding: 4px 10px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: var(--tag-bg);
+      color: var(--muted);
+    }
+    .badge.green { border-color: #1e4a34; color: var(--success); background: #0d201a; }
+    .badge.blue  { border-color: #1d2450; color: #7b8ff5; background: #0e1128; }
+
+    /* ── Section Headings ──────────────────────────────────────── */
+    .doc-section { margin-bottom: 3.5rem; }
+    h2 {
+      font-family: var(--display);
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--heading);
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+      scroll-margin-top: 2rem;
+    }
+    h2::before {
+      content: attr(data-tag);
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--accent);
+      display: block;
+      margin-bottom: 0.25rem;
+      letter-spacing: 0.1em;
+    }
+    h3 {
+      font-family: var(--sans);
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--heading);
+      margin: 1.5rem 0 0.5rem;
+    }
+    p { color: var(--text); margin-bottom: 0.75rem; }
+    .section-rule { border: none; border-top: 1px solid var(--border); margin: 3rem 0; }
+
+    /* ── Code Blocks ───────────────────────────────────────────── */
+    .code-block {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin: 1.25rem 0;
+    }
+    .code-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.6rem 1rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .code-lang {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+    }
+    .copy-btn {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: var(--muted);
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 8px;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .copy-btn:hover { color: var(--heading); border-color: var(--accent); }
+    pre {
+      padding: 1.25rem 1.25rem;
+      overflow-x: auto;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      line-height: 1.75;
+      color: #abb2d8;
+    }
+    .kw  { color: #9b6af0; }
+    .fn  { color: #7b8ff5; }
+    .str { color: #3ecf7a; }
+    .cm  { color: #484e6b; font-style: italic; }
+    .num { color: var(--warn); }
+    code {
+      font-family: var(--mono);
+      font-size: 0.82em;
+      background: var(--tag-bg);
+      border: 1px solid var(--border);
+      padding: 1px 6px;
+      border-radius: 4px;
+      color: #9b8fef;
+    }
+
+    /* ── Callout ───────────────────────────────────────────────── */
+    .callout {
+      border-left: 3px solid var(--accent);
+      background: var(--tag-bg);
+      border-radius: 0 var(--radius) var(--radius) 0;
+      padding: 0.9rem 1.1rem;
+      margin: 1.25rem 0;
+      font-size: 0.9rem;
+    }
+    .callout.warn { border-color: var(--warn); }
+    .callout strong { color: var(--heading); }
+
+    /* ── API Table ─────────────────────────────────────────────── */
+    .api-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.25rem 0;
+      font-size: 0.875rem;
+    }
+    .api-table th {
+      text-align: left;
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      padding: 0.5rem 0.75rem;
+      text-transform: uppercase;
+    }
+    .api-table td {
+      padding: 0.65rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .api-table tr:last-child td { border-bottom: none; }
+    .api-table tr:hover td { background: var(--tag-bg); }
+    .param-name { font-family: var(--mono); color: var(--heading); font-size: 0.82rem; }
+    .param-type { font-family: var(--mono); color: var(--warn); font-size: 0.78rem; }
+    .param-req  { font-family: var(--mono); font-size: 0.72rem; color: var(--success); }
+    .param-opt  { font-family: var(--mono); font-size: 0.72rem; color: var(--muted); }
+
+    /* ── Links Section ─────────────────────────────────────────── */
+    .links-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1rem;
+      margin-top: 1.25rem;
+    }
+    .link-card {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.1rem;
+      text-decoration: none;
+      transition: border-color 0.15s, background 0.15s;
+      position: relative;
+      overflow: hidden;
+    }
+    .link-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .link-card:hover { border-color: var(--accent); background: #0f1220; }
+    .link-card:hover::before { opacity: 0.04; }
+    .link-card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .link-tag {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: var(--tag-bg);
+      border: 1px solid var(--border);
+      padding: 2px 7px;
+      border-radius: 20px;
+    }
+    .link-arrow {
+      color: var(--muted);
+      font-size: 0.85rem;
+      transition: transform 0.15s, color 0.15s;
+    }
+    .link-card:hover .link-arrow { transform: translate(2px, -2px); color: var(--accent); }
+    .link-card h4 {
+      font-family: var(--sans);
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--heading);
+      position: relative;
+    }
+    .link-card p {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin: 0;
+      position: relative;
+    }
+
+    /* ── Footer ────────────────────────────────────────────────── */
+    .doc-footer {
+      border-top: 1px solid var(--border);
+      padding-top: 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .doc-footer span {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+    .footer-links { display: flex; gap: 1.5rem; }
+    .footer-links a {
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .footer-links a:hover { color: var(--heading); }
+
+    /* ── Mobile Top Bar ────────────────────────────────────────── */
+    .mobile-bar {
+      display: none;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 1.1rem;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .mobile-logo {
+      font-family: var(--display);
+      font-size: 1.1rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hamburger {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 9px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      color: var(--muted);
+    }
+    .hamburger span {
+      display: block;
+      width: 18px;
+      height: 2px;
+      background: var(--muted);
+      border-radius: 2px;
+      transition: transform 0.2s, opacity 0.2s;
+    }
+    .hamburger.open span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+    .hamburger.open span:nth-child(2) { opacity: 0; }
+    .hamburger.open span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+    /* ── Drawer overlay ────────────────────────────────────────── */
+    .nav-drawer {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 90;
+    }
+    .nav-drawer-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+    }
+    .nav-drawer-panel {
+      position: absolute;
+      top: 0; left: 0; bottom: 0;
+      width: 260px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 5rem 1.25rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      overflow-y: auto;
+      transform: translateX(-100%);
+      transition: transform 0.25s cubic-bezier(.4,0,.2,1);
+    }
+    .nav-drawer.open { display: block; }
+    .nav-drawer.open .nav-drawer-panel { transform: translateX(0); }
+
+    /* ── Tablet ────────────────────────────────────────────────── */
+    @media (max-width: 960px) {
+      .page-grid { grid-template-columns: 200px 1fr; }
+      .main { padding: 2.5rem 2rem 5rem; }
+      .api-table { font-size: 0.8rem; }
+    }
+
+    /* ── Mobile ────────────────────────────────────────────────── */
+    @media (max-width: 680px) {
+      .page-grid { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .mobile-bar { display: flex; }
+      .main {
+        padding: 1.5rem 1rem 4rem;
+        max-width: 100%;
+      }
+      h1 { font-size: clamp(1.6rem, 7vw, 2.4rem); }
+      h2 { font-size: 1.25rem; }
+      .links-grid { grid-template-columns: 1fr; }
+      pre { font-size: 0.75rem; }
+      /* Make tables scroll horizontally on small screens */
+      .table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+      }
+      .api-table {
+        min-width: 500px;
+        border: none;
+        border-radius: 0;
+        margin: 0;
+      }
+      .api-table th, .api-table td { padding: 0.5rem 0.6rem; }
+      .hero { padding-bottom: 2rem; margin-bottom: 2rem; }
+      .doc-section { margin-bottom: 2.5rem; }
+      .section-rule { margin: 2rem 0; }
+      .doc-footer { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+      .footer-links { flex-wrap: wrap; gap: 1rem; }
+      .hero-desc { font-size: 0.95rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition: none !important; animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Mobile Top Bar ──────────────────────────────────────────── -->
+<div class="mobile-bar">
+  <span class="mobile-logo">Azzok</span>
+  <button class="hamburger" id="menuBtn" aria-label="Open navigation" aria-expanded="false">
+    <span></span><span></span><span></span>
+  </button>
+</div>
+
+<!-- ── Nav Drawer (mobile) ──────────────────────────────────────── -->
+<div class="nav-drawer" id="navDrawer" role="dialog" aria-modal="true" aria-label="Navigation">
+  <div class="nav-drawer-overlay" id="drawerOverlay"></div>
+  <div class="nav-drawer-panel">
+    <nav class="nav-group">
+      <div class="nav-label">Getting Started</div>
+      <a href="#overview"     class="nav-link drawer-link"><span class="dot"></span>Overview</a>
+    </nav>
+    <nav class="nav-group">
+      <div class="nav-label">API Reference</div>
+      <a href="#init"    class="nav-link drawer-link"><span class="dot"></span>init()</a>
+      <a href="#methods" class="nav-link drawer-link"><span class="dot"></span>Methods</a>
+      <a href="#options" class="nav-link drawer-link"><span class="dot"></span>Options</a>
+    </nav>
+    <nav class="nav-group">
+      <div class="nav-label">Application Documentation's</div>
+      <a href="#links"    class="nav-link drawer-link"><span class="dot"></span>Documentation Links</a>
+    </nav>
+  </div>
+</div>
+
+<div class="page-grid">
+
+  <!-- ── Sidebar ──────────────────────────────────────────────── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <span>Azzok</span>
+      <span class="logo-badge">v2.4.1</span>
+    </div>
+
+    <nav class="nav-group">
+      <div class="nav-label">Getting Started</div>
+      <a href="#overview"     class="nav-link active"><span class="dot"></span>Overview</a>
+    </nav>
+
+    <nav class="nav-group">
+      <div class="nav-label">API Reference</div>
+      <a href="#init"    class="nav-link"><span class="dot"></span>init()</a>
+      <a href="#methods" class="nav-link"><span class="dot"></span>Methods</a>
+      <a href="#options" class="nav-link"><span class="dot"></span>Options</a>
+    </nav>
+
+    <nav class="nav-group">
+      <div class="nav-label">Application Documentation's</div>
+      <a href="#links"    class="nav-link"><span class="dot"></span>Documentation Links</a>
+    </nav>
+  </aside>
+
+  <!-- ── Main ─────────────────────────────────────────────────── -->
+  <main class="main">
+
+    <!-- Hero -->
+    <section class="hero" id="overview">
+      <p class="hero-eyebrow">// DOCUMENTATION · v2.4.1</p>
+      <h1>Build faster with <em>Azzok</em></h1>
+      <p class="hero-desc">
+        A lightweight, zero-dependency JavaScript utility library for
+        modern web applications. Typed, tree-shakeable, and production-ready.
+      </p>
+      <div class="hero-badges">
+        <span class="badge green">✓ Stable</span>
+        <span class="badge blue">ESM + CJS</span>
+        <span class="badge">MIT License</span>
+        <span class="badge">TypeScript</span>
+        <span class="badge">3.2 kB gzipped</span>
+      </div>
+    </section>
+
+
+    <!-- init() -->
+    <section class="doc-section" id="init">
+      <h2 data-tag="// 03 · API">init(options)</h2>
+      <p>Creates and returns a configured Azzok instance. Must be called before using stateful methods.</p>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">TYPESCRIPT</span>
+          <button class="copy-btn" onclick="copyCode(this)">copy</button>
+        </div>
+        <pre><span class="kw">function</span> <span class="fn">init</span>(options?: InitOptions): KitInstance</pre>
+      </div>
+
+      <h3>Parameters</h3>
+      <div class="table-wrap"><table class="api-table">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Required</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="param-name">debug</span></td>
+            <td><span class="param-type">boolean</span></td>
+            <td><span class="param-opt">optional</span></td>
+            <td>Enables verbose console logging. Default: <code>false</code></td>
+          </tr>
+          <tr>
+            <td><span class="param-name">timeout</span></td>
+            <td><span class="param-type">number</span></td>
+            <td><span class="param-opt">optional</span></td>
+            <td>Request timeout in milliseconds. Default: <code>5000</code></td>
+          </tr>
+          <tr>
+            <td><span class="param-name">retries</span></td>
+            <td><span class="param-type">number</span></td>
+            <td><span class="param-opt">optional</span></td>
+            <td>Number of retry attempts on failure. Default: <code>3</code></td>
+          </tr>
+          <tr>
+            <td><span class="param-name">onError</span></td>
+            <td><span class="param-type">Function</span></td>
+            <td><span class="param-opt">optional</span></td>
+            <td>Global error callback <code>(err: Error) => void</code></td>
+          </tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <hr class="section-rule" />
+
+    <!-- Methods -->
+    <section class="doc-section" id="methods">
+      <h2 data-tag="// 04 · METHODS">Methods</h2>
+
+      <h3>debounce(fn, delay)</h3>
+      <p>Returns a debounced version of the provided function, delaying invocation until after <code>delay</code> milliseconds have elapsed since the last call.</p>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">TYPESCRIPT</span>
+          <button class="copy-btn" onclick="copyCode(this)">copy</button>
+        </div>
+        <pre><span class="fn">debounce</span>&lt;T <span class="kw">extends</span> (...args: <span class="kw">any</span>[]) => <span class="kw">any</span>&gt;(fn: T, delay: <span class="param-type">number</span>): T</pre>
+      </div>
+
+      <h3>deepMerge(...objects)</h3>
+      <p>Recursively merges two or more plain objects. Arrays are replaced, not concatenated. Returns a new object.</p>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">JAVASCRIPT</span>
+          <button class="copy-btn" onclick="copyCode(this)">copy</button>
+        </div>
+        <pre><span class="kw">const</span> result = <span class="fn">deepMerge</span>(
+  { a: <span class="num">1</span>, b: { c: <span class="num">2</span> } },
+  { b: { d: <span class="num">3</span> }, e: <span class="num">4</span> }
+);
+<span class="cm">// → { a: 1, b: { c: 2, d: 3 }, e: 4 }</span></pre>
+      </div>
+
+      <div class="callout warn">
+        <strong>Note:</strong> <code>deepMerge</code> only handles plain objects. Passing class instances or arrays at the top level produces undefined behavior.
+      </div>
+
+      <h3>throttle(fn, interval)</h3>
+      <p>Limits <code>fn</code> to fire at most once per <code>interval</code> ms. Useful for scroll and mousemove handlers.</p>
+
+      <h3>once(fn)</h3>
+      <p>Wraps a function so it only executes the first time it is called. All subsequent calls return the original result.</p>
+    </section>
+
+    <hr class="section-rule" />
+
+    <!-- Options -->
+    <section class="doc-section" id="options">
+      <h2 data-tag="// 05 · CONFIG">Options Reference</h2>
+      <p>All options can be overridden per-call when using stateful instance methods.</p>
+
+      <div class="table-wrap"><table class="api-table">
+        <thead>
+          <tr>
+            <th>Option</th>
+            <th>Type</th>
+            <th>Default</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="param-name">debug</span></td>
+            <td><span class="param-type">boolean</span></td>
+            <td><code>false</code></td>
+            <td>Enable debug logging to the console</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">timeout</span></td>
+            <td><span class="param-type">number</span></td>
+            <td><code>5000</code></td>
+            <td>Milliseconds before a request times out</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">retries</span></td>
+            <td><span class="param-type">number</span></td>
+            <td><code>3</code></td>
+            <td>Retry count for transient failures</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">cache</span></td>
+            <td><span class="param-type">boolean</span></td>
+            <td><code>true</code></td>
+            <td>Cache computed results in memory</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">strict</span></td>
+            <td><span class="param-type">boolean</span></td>
+            <td><code>false</code></td>
+            <td>Throw on invalid arguments instead of silently failing</td>
+          </tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <hr class="section-rule" />
+
+    <!-- Examples -->
+    <section class="doc-section" id="examples">
+      <h2 data-tag="// 06 · EXAMPLES">Examples</h2>
+
+      <h3>Handling async with retry</h3>
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">JAVASCRIPT</span>
+          <button class="copy-btn" onclick="copyCode(this)">copy</button>
+        </div>
+        <pre><span class="kw">import</span> { <span class="fn">init</span> } <span class="kw">from</span> <span class="str">'azzok'</span>;
+
+<span class="kw">const</span> kit = <span class="fn">init</span>({ retries: <span class="num">3</span>, debug: <span class="kw">true</span> });
+
+<span class="kw">const</span> data = <span class="kw">await</span> kit.<span class="fn">fetch</span>(<span class="str">'https://api.example.com/data'</span>);
+console.<span class="fn">log</span>(data);</pre>
+      </div>
+
+      <h3>Combining utilities</h3>
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">JAVASCRIPT</span>
+          <button class="copy-btn" onclick="copyCode(this)">copy</button>
+        </div>
+        <pre><span class="kw">import</span> { <span class="fn">debounce</span>, <span class="fn">once</span> } <span class="kw">from</span> <span class="str">'azzok'</span>;
+
+<span class="kw">const</span> setup = <span class="fn">once</span>(() => {
+  console.<span class="fn">log</span>(<span class="str">'initialized'</span>);
+});
+
+<span class="kw">const</span> onInput = <span class="fn">debounce</span>((e) => {
+  <span class="fn">setup</span>(); <span class="cm">// only runs once</span>
+  console.<span class="fn">log</span>(e.target.value);
+}, <span class="num">300</span>);</pre>
+      </div>
+    </section>
+
+    <hr class="section-rule" />
+
+    <!-- External Links -->
+    <section class="doc-section" id="links">
+      <h2 data-tag="// 07 · RESOURCES">Application Documentation's</h2>
+      <p>Helpful references, tools, and community resources for working with Azzok and the wider JavaScript ecosystem.</p>
+
+      <div class="links-grid">
+
+        <a class="link-card" href="https://azzok.github.io/docs/Documentation/LunaShortz/index.html" target="_blank" rel="noopener noreferrer">
+          <div class="link-card-top">
+            <span class="link-tag">Mobile - Flutter</span>
+            <span class="link-arrow">↗</span>
+          </div>
+          <h4>Luna-Shortz-Flutter</h4>
+          <p>Tiktok Clone - Short Video App Live streaming App | Laravel & Flutter</p>
+        </a>
+
+        <a class="link-card" href="https://azzok.github.io/docs/Documentation/LunaFlix/index.html" target="_blank" rel="noopener noreferrer">
+          <div class="link-card-top">
+            <span class="link-tag">Source</span>
+            <span class="link-arrow">↗</span>
+          </div>
+          <h4>LunaFlix-Flutter</h4>
+          <p>
+            DTLive v2.1 - Movie, TV Show, OTT, Live TV, Streaming Flutter App (Android, iOS, Web) with Admin Panel - nulled
+          </p>
+        </a>
+
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="doc-footer">
+      <span>Azzok v2.4.1 · MIT License</span>
+      <div class="footer-links">
+        <a href="#overview">Back to top</a>
+        <a href="https://github.com/yourorg/azzok" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href="https://npmjs.com/package/azzok" target="_blank" rel="noopener noreferrer">npm</a>
+      </div>
+    </footer>
+
+  </main>
+</div>
+
+<script>
+  /* ── Copy button ──────────────────────────────────────────────── */
+  function copyCode(btn) {
+    const pre = btn.closest('.code-block').querySelector('pre');
+    navigator.clipboard.writeText(pre.innerText).then(() => {
+      btn.textContent = 'copied!';
+      setTimeout(() => btn.textContent = 'copy', 2000);
+    });
+  }
+
+  /* ── Mobile drawer ────────────────────────────────────────────── */
+  const menuBtn      = document.getElementById('menuBtn');
+  const navDrawer    = document.getElementById('navDrawer');
+  const drawerOverlay = document.getElementById('drawerOverlay');
+
+  function openDrawer() {
+    navDrawer.classList.add('open');
+    menuBtn.classList.add('open');
+    menuBtn.setAttribute('aria-expanded', 'true');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeDrawer() {
+    navDrawer.classList.remove('open');
+    menuBtn.classList.remove('open');
+    menuBtn.setAttribute('aria-expanded', 'false');
+    document.body.style.overflow = '';
+  }
+
+  menuBtn.addEventListener('click', () =>
+    navDrawer.classList.contains('open') ? closeDrawer() : openDrawer()
+  );
+  drawerOverlay.addEventListener('click', closeDrawer);
+
+  // Close drawer when a nav link is tapped
+  document.querySelectorAll('.drawer-link').forEach(link =>
+    link.addEventListener('click', closeDrawer)
+  );
+
+  // Close on Escape
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeDrawer();
+  });
+
+  /* ── Active nav link on scroll ────────────────────────────────── */
+  const sections = document.querySelectorAll('section[id], .hero[id]');
+  const links    = document.querySelectorAll('.nav-link');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        const active = document.querySelectorAll(`.nav-link[href="#${entry.target.id}"]`);
+        active.forEach(a => a.classList.add('active'));
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+
+  sections.forEach(s => observer.observe(s));
+</script>
+
+</body>
+</html>
