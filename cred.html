@@ -104,13 +104,14 @@
     letter-spacing:0.06em; text-transform:uppercase;
     color:var(--text-dim); padding:8px 16px; border-radius:18px;
     cursor:pointer; user-select:none; transition:.15s;
-    background:transparent; border:none;
+    background:transparent; border:none; white-space:nowrap;
   }
   .nav-item:hover{ color:var(--text); }
   .nav-item.active{
     background:linear-gradient(135deg, rgba(255,61,129,0.22), rgba(255,61,129,0.08));
     color:var(--pink); box-shadow:0 0 0 1px rgba(255,61,129,0.35), 0 0 16px -4px rgba(255,61,129,0.5);
   }
+  .nav-item.locked{ position:relative; }
   .status-icons{ display:flex; align-items:center; gap:8px; }
   .status-icons .sb{
     width:22px; height:22px; border-radius:5px;
@@ -398,11 +399,25 @@
   .log-console .l.ok{ color:var(--green); }
   .log-console .l.err{ color:var(--red); }
 
+  /* ===== SECRETS UNLOCK MODAL ===== */
+  .modal-overlay{
+    position:fixed; inset:0; z-index:40; display:flex; align-items:center; justify-content:center;
+    padding:20px; background:rgba(2,4,8,0.78); backdrop-filter:blur(4px);
+  }
+  .modal-overlay .lock-panel{ max-width:400px; box-shadow:0 20px 60px -20px rgba(0,0,0,0.8); }
+  .modal-cancel-btn{
+    width:100%; margin-top:10px; background:transparent; color:var(--text-dim);
+    border:1px solid var(--line); padding:10px; border-radius:6px;
+    font-family:var(--font-head); font-weight:700; font-size:10.5px; letter-spacing:0.08em;
+    text-transform:uppercase; cursor:pointer; transition:.15s;
+  }
+  .modal-cancel-btn:hover{ color:var(--text); border-color:var(--text-dim); }
+
   #toast{
     position:fixed; bottom:60px; left:50%; transform:translateX(-50%);
     background:var(--bg-panel-2); border:1px solid var(--cyan-dim); color:var(--cyan);
     font-size:11px; font-family:var(--font-head); font-weight:600; letter-spacing:0.05em;
-    padding:9px 16px; border-radius:6px; z-index:30; box-shadow:0 0 20px -4px rgba(45,216,238,0.4);
+    padding:9px 16px; border-radius:6px; z-index:50; box-shadow:0 0 20px -4px rgba(45,216,238,0.4);
   }
   .hidden{ display:none !important; }
 
@@ -435,9 +450,50 @@
   }
   .detail-search-count .hit{ color:var(--cyan); }
 
+  /* ============================================================
+     RESPONSIVE  — header wraps, nav pill scrolls, columns stack
+     and (critically) the mobile Credentials/Secrets list gets a
+     definite height so it actually renders.
+  ============================================================ */
   @media (max-width:980px){
-    #mainGrid{ flex-direction:column; overflow-y:auto; }
-    .col-left, .col-right{ width:100%; }
+    body{ overflow:auto; height:auto; }
+    #app{ height:auto; min-height:100vh; }
+
+    /* header: allow wrapping, nav pill on its own scrollable row */
+    #topBar{ height:auto; flex-wrap:wrap; gap:10px 12px; padding:10px 14px; }
+    .brand{ flex:1 1 auto; min-width:0; }
+    .top-right{ gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+    .nav-pill{
+      order:3; width:100%; overflow-x:auto; justify-content:flex-start;
+      -webkit-overflow-scrolling:touch;
+    }
+    .nav-pill::-webkit-scrollbar{ height:0; }
+    .nav-item{ flex-shrink:0; }
+
+    #crumbBar{ height:auto; padding:8px 14px; flex-wrap:wrap; }
+
+    /* stacked columns with real heights */
+    #mainGrid{ flex-direction:column; height:auto; overflow:visible; padding:12px; gap:12px; }
+    .col-left, .col-center, .col-right{ width:100%; flex:none; }
+    .col-center{ order:1; }
+    .col-right{ order:2; }
+    .col-left{ order:3; }
+
+    .col-center > .panel{ min-height:62vh; }
+    .col-right  > .panel{ min-height:55vh; }
+    .col-left  .panel{ min-height:auto; }
+    .cat-list{ max-height:280px; }
+    .manifest-list{ overflow-y:auto; }
+    .detail-scroll{ overflow-y:auto; }
+
+    #bottomBar{ height:auto; flex-wrap:wrap; gap:8px 16px; padding:10px 14px; }
+  }
+  @media (max-width:560px){
+    .status-icons, .sys-tag, .clock-block, .top-right .divider{ display:none; }
+    .brand-text .t2{ display:none; }
+    .brand-logo{ width:34px; height:34px; }
+    .d-key{ width:96px; }
+    .col-center > .panel{ min-height:58vh; }
   }
 </style>
 </head>
@@ -492,7 +548,7 @@
     <div class="nav-pill" id="navPill">
       <button class="nav-item" data-nav="dashboard">Dashboard</button>
       <button class="nav-item active" data-nav="credentials">Credentials</button>
-      <button class="nav-item" data-nav="agents">Agents</button>
+      <button class="nav-item locked" data-nav="secrets">Secrets</button>
       <button class="nav-item" data-nav="missions">Missions</button>
       <button class="nav-item" data-nav="locations">Locations</button>
       <button class="nav-item" data-nav="files">Files</button>
@@ -523,7 +579,7 @@
 
   <div id="crumbBar">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>
-    <span>Database</span><span class="sep">›</span><span>Credentials</span><span class="sep">›</span><span class="cur" id="crumbCur">All Records</span>
+    <span>Database</span><span class="sep">›</span><span id="crumbVault">Credentials</span><span class="sep">›</span><span class="cur" id="crumbCur">All Records</span>
   </div>
 
   <div id="mainGrid">
@@ -534,7 +590,7 @@
         <div class="panel-head">
           <div class="lh">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-            Credential Categories
+            Categories
           </div>
         </div>
         <div class="cat-list" id="catList"></div>
@@ -569,7 +625,7 @@
         <div class="panel-head">
           <div class="lh">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/></svg>
-            Credentials List
+            <span id="listTitle">Credentials List</span>
           </div>
         </div>
         <div class="list-toolbar">
@@ -591,7 +647,7 @@
         <div class="panel-head">
           <div class="lh">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6M9 13h6M9 17h3"/></svg>
-            Credential Details
+            Details
           </div>
           <div class="head-actions">
             <button title="Close" id="closeDetailBtn">
@@ -638,10 +694,40 @@
 
 </div>
 
+<!-- SECRETS UNLOCK MODAL -->
+<div id="secretsModal" class="modal-overlay hidden">
+  <div class="lock-panel panel">
+    <div class="lock-body">
+      <div class="lock-brand">
+        <div class="brand-logo" style="border-color:var(--purple-dim);box-shadow:0 0 14px -2px rgba(160,107,255,0.35)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" style="color:var(--purple)"><rect x="5" y="10" width="14" height="9" rx="1.5"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>
+        </div>
+        <div class="brand-text">
+          <div class="t1" style="color:var(--purple)">Secrets Vault</div>
+          <div class="t2">Restricted :: separate authorization</div>
+        </div>
+      </div>
+      <div class="field-label-sm">Enter 4-digit secrets key</div>
+      <div class="pin-row" id="secretsPinRow">
+        <input class="pin-box" maxlength="1" inputmode="text" autocomplete="off" />
+        <span class="pin-sep">·</span>
+        <input class="pin-box" maxlength="1" inputmode="text" autocomplete="off" />
+        <span class="pin-sep">·</span>
+        <input class="pin-box" maxlength="1" inputmode="text" autocomplete="off" />
+        <span class="pin-sep">·</span>
+        <input class="pin-box" maxlength="1" inputmode="text" autocomplete="off" />
+      </div>
+      <button id="secretsUnlockBtn" class="run-btn">▶ Unlock Secrets</button>
+      <button id="secretsCancelBtn" class="modal-cancel-btn">Cancel</button>
+      <div class="log-console" id="secretsLog"></div>
+    </div>
+  </div>
+</div>
+
 <div id="toast" class="hidden"></div>
 
 <script>
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHs8OExVGq_jpyG_k7WCTG4PqWkX2fogoRWfapoDet8OmdiSKip1XXqHOrEN8U6j1o/exec";
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby-F4MMYYM45QF_Tv9a86oPV2aqIynYs9FF6aG6yyI6DYPcLonCMQn_LhHHQNFGAYHR/exec";
 
   /* ---- clock ---- */
   const clockEl = document.getElementById('clock');
@@ -651,89 +737,165 @@
   }
   tickClock(); setInterval(tickClock, 1000);
 
-  /* ---- lock screen log ---- */
-  const logConsole = document.getElementById('logConsole');
-  function logLine(text, cls){
+  /* ---- generic console logger ---- */
+  function logTo(consoleEl, text, cls){
     const el = document.createElement('div');
     el.className = 'l' + (cls ? ' '+cls : '');
     const d = new Date(), p = n => String(n).padStart(2,'0');
     el.textContent = `[${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}] ${text}`;
-    logConsole.appendChild(el); logConsole.scrollTop = logConsole.scrollHeight;
+    consoleEl.appendChild(el); consoleEl.scrollTop = consoleEl.scrollHeight;
   }
+  const logConsole = document.getElementById('logConsole');
+  const secretsLog = document.getElementById('secretsLog');
+  function logLine(text, cls){ logTo(logConsole, text, cls); }
   logLine('boot sequence complete','hi');
   logLine('awaiting override key...');
 
-  /* ---- PIN ---- */
-  const boxes = Array.from(document.querySelectorAll('.pin-box'));
-  const unlockBtn = document.getElementById('unlockBtn');
-  boxes.forEach((box, i) => {
-    box.dataset.real = "";
-    box.addEventListener('keydown', e => { if (e.key==='Backspace' && box.value==='' && i>0) boxes[i-1].focus(); });
-    box.addEventListener('input', e => {
-      let val = e.target.value.replace(/\s/g,''); if (val.length>1) val=val.slice(-1);
-      if (!val){ box.dataset.real=""; box.value=""; return; }
-      box.dataset.real=val; box.value=val;
-      if (i<boxes.length-1) boxes[i+1].focus();
-      else { box.blur(); if (getPin().length===4) tryUnlock(); }
+  /* ---- reusable 4-box PIN input factory ---- */
+  function makePinInputs(boxes, onComplete){
+    function getPin(){ return boxes.map(b => b.dataset.real || '').join(''); }
+    function clear(shake){
+      boxes.forEach(b => {
+        b.dataset.real = ''; b.value = '';
+        if (shake){ b.classList.add('shake'); setTimeout(()=>b.classList.remove('shake'), 350); }
+      });
+      boxes[0].focus();
+    }
+    boxes.forEach((box, i) => {
+      box.dataset.real = '';
+      box.addEventListener('keydown', e => { if (e.key==='Backspace' && box.value==='' && i>0) boxes[i-1].focus(); });
+      box.addEventListener('input', e => {
+        let val = e.target.value.replace(/\s/g,''); if (val.length>1) val = val.slice(-1);
+        if (!val){ box.dataset.real=''; box.value=''; return; }
+        box.dataset.real = val; box.value = val;
+        if (i < boxes.length-1) boxes[i+1].focus();
+        else { box.blur(); if (getPin().length===boxes.length) onComplete(getPin()); }
+      });
+      box.addEventListener('paste', e => {
+        e.preventDefault();
+        const text = (e.clipboardData||window.clipboardData).getData('text').trim();
+        text.split('').slice(0, boxes.length-i).forEach((ch, off) => { boxes[i+off].dataset.real=ch; boxes[i+off].value=ch; });
+        boxes[Math.min(i+text.length, boxes.length-1)].focus();
+        if (getPin().length===boxes.length) onComplete(getPin());
+      });
     });
-    box.addEventListener('paste', e => {
-      e.preventDefault();
-      const text=(e.clipboardData||window.clipboardData).getData('text').trim();
-      text.split('').slice(0,boxes.length-i).forEach((ch,off) => { boxes[i+off].dataset.real=ch; boxes[i+off].value=ch; });
-      boxes[Math.min(i+text.length,boxes.length-1)].focus();
-      if (getPin().length===4) tryUnlock();
-    });
-  });
-  function getPin(){ return boxes.map(b=>b.dataset.real).join(''); }
-  function clearPin(shake){
-    boxes.forEach(b=>{ b.dataset.real=""; b.value=""; if(shake){ b.classList.add('shake'); setTimeout(()=>b.classList.remove('shake'),350); } });
-    boxes[0].focus();
+    return { getPin, clear, focus: () => boxes[0].focus() };
   }
 
-  /* ---- authenticate ---- */
-  // After login we only store the manifest (credentials.json entries).
-  // Each entry's full data is fetched on-demand when the user clicks it.
-  let manifestEntries = []; // [{ title, path }]
-  let detailCache = {};     // path -> parsed data
+  const lockPin    = makePinInputs(Array.from(document.querySelectorAll('#pinRow .pin-box')),        () => tryUnlock());
+  const secretsPin = makePinInputs(Array.from(document.querySelectorAll('#secretsPinRow .pin-box')), () => trySecretsUnlock());
 
+  /* ====================================================
+     MULTI-VAULT STATE
+     Each vault (credentials / secrets) keeps its own
+     manifest entries, per-file cache and pin.
+  ==================================================== */
+  const vaultState = {
+    credentials: { entries: [], cache: {}, pin: null, unlocked: false },
+    secrets:     { entries: [], cache: {}, pin: null, unlocked: false }
+  };
+  const VAULT_META = {
+    credentials: { crumb: 'Credentials', listTitle: 'Credentials List', noun: 'credential' },
+    secrets:     { crumb: 'Secrets',     listTitle: 'Secrets List',     noun: 'secret' }
+  };
+  let currentVault = 'credentials';
+  function V(){ return vaultState[currentVault]; }
+
+  let selectedPath = null;
+  let filteredEntries = [];
+  let activeCategoryFilter = '';
+
+  /* ---- authenticate (credentials / primary lock screen) ---- */
+  const unlockBtn = document.getElementById('unlockBtn');
   async function tryUnlock(){
-    const pin = getPin();
-    if (pin.length!==4){ logLine('key incomplete — 4 digits required','err'); return; }
-    unlockBtn.disabled=true; unlockBtn.textContent='▶ Verifying...';
+    const pin = lockPin.getPin();
+    if (pin.length !== 4){ logLine('key incomplete — 4 digits required','err'); return; }
+    unlockBtn.disabled = true; unlockBtn.textContent = '▶ Verifying...';
     logLine('contacting sys_root...','hi');
     try {
       const res = await fetch(SCRIPT_URL, {
         method:'POST',
         headers:{'Content-Type':'text/plain;charset=utf-8'},
-        body: JSON.stringify({ password: pin })
+        body: JSON.stringify({ password: pin, vault: 'credentials' })
       });
       const result = await res.json();
       if (result.success){
         logLine('access granted — loading manifest','ok');
-        sessionStorage.setItem('vaultManifest', JSON.stringify(result.data));
-        setTimeout(() => showApp(result.data), 300);
+        vaultState.credentials.pin = pin;
+        loadVaultData('credentials', result.data);
+        sessionStorage.setItem('vaultManifest_credentials', JSON.stringify(result.data));
+        sessionStorage.setItem('vaultPin_credentials', pin);
+        setTimeout(() => { enterApp(); switchVault('credentials'); }, 300);
       } else {
-        logLine(result.message||'access denied','err'); clearPin(true);
+        logLine(result.message || 'access denied','err'); lockPin.clear(true);
       }
     } catch(err){
       logLine('connection failed — check SCRIPT_URL','err');
     } finally {
-      unlockBtn.disabled=false; unlockBtn.textContent='▶ Authenticate';
+      unlockBtn.disabled = false; unlockBtn.textContent = '▶ Authenticate';
     }
   }
   unlockBtn.addEventListener('click', tryUnlock);
-  boxes[0].focus();
+  lockPin.focus();
+
+  /* ---- authenticate (secrets vault — separate password) ---- */
+  const secretsModal     = document.getElementById('secretsModal');
+  const secretsUnlockBtn = document.getElementById('secretsUnlockBtn');
+  const secretsCancelBtn = document.getElementById('secretsCancelBtn');
+
+  function openSecretsModal(){
+    secretsModal.classList.remove('hidden');
+    secretsLog.innerHTML = '';
+    logTo(secretsLog, 'secrets vault locked','hi');
+    logTo(secretsLog, 'awaiting secrets key...');
+    secretsPin.clear(false);
+    secretsPin.focus();
+  }
+  function closeSecretsModal(){ secretsModal.classList.add('hidden'); }
+  secretsCancelBtn.addEventListener('click', closeSecretsModal);
+  secretsModal.addEventListener('click', e => { if (e.target === secretsModal) closeSecretsModal(); });
+
+  async function trySecretsUnlock(){
+    const pin = secretsPin.getPin();
+    if (pin.length !== 4){ logTo(secretsLog, 'key incomplete — 4 digits required','err'); return; }
+    secretsUnlockBtn.disabled = true; secretsUnlockBtn.textContent = '▶ Verifying...';
+    logTo(secretsLog, 'contacting secrets endpoint...','hi');
+    try {
+      const res = await fetch(SCRIPT_URL, {
+        method:'POST',
+        headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify({ password: pin, vault: 'secrets' })
+      });
+      const result = await res.json();
+      if (result.success){
+        logTo(secretsLog, 'access granted — loading secrets','ok');
+        vaultState.secrets.pin = pin;
+        loadVaultData('secrets', result.data);
+        sessionStorage.setItem('vaultManifest_secrets', JSON.stringify(result.data));
+        sessionStorage.setItem('vaultPin_secrets', pin);
+        setTimeout(() => { closeSecretsModal(); switchVault('secrets'); }, 300);
+      } else {
+        logTo(secretsLog, result.message || 'access denied','err'); secretsPin.clear(true);
+      }
+    } catch(err){
+      logTo(secretsLog, 'connection failed — check SCRIPT_URL','err');
+    } finally {
+      secretsUnlockBtn.disabled = false; secretsUnlockBtn.textContent = '▶ Unlock Secrets';
+    }
+  }
+  secretsUnlockBtn.addEventListener('click', trySecretsUnlock);
 
   /* ---- toast ---- */
   const toastEl = document.getElementById('toast');
   function showToast(msg){
-    toastEl.textContent=msg; toastEl.classList.remove('hidden');
-    clearTimeout(showToast._t); showToast._t=setTimeout(()=>toastEl.classList.add('hidden'),1500);
+    toastEl.textContent = msg; toastEl.classList.remove('hidden');
+    clearTimeout(showToast._t); showToast._t = setTimeout(()=>toastEl.classList.add('hidden'), 1500);
   }
 
   /* ---- helpers ---- */
   function escHtml(s){ return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   function maskVal(v){ if(!v) return ''; if(v.length<=4) return '••••••••'; return v.slice(0,2)+'••••••••'+v.slice(-2); }
+  function isMobile(){ return window.matchMedia('(max-width:980px)').matches; }
 
   /* ---- field icon ---- */
   function fieldIcon(label){
@@ -778,32 +940,23 @@
   /* ====================================================
      FLAT-EXPAND: recursively pull every leaf "credential
      card" out of whatever nesting the JSON uses.
-     Supports:
-       top-level fields[]
-       groups[] -> data[] -> fields[]  (freelance.json shape)
-       data[] -> fields[]              (flat list shape)
   ==================================================== */
   function extractCards(node, breadcrumb){
     const cards = [];
     const fields = Array.isArray(node.fields) ? node.fields : [];
     const title  = node.title || node.name || breadcrumb[breadcrumb.length-1] || 'Untitled';
 
-    // Does this node have direct children?
     const hasGroups = Array.isArray(node.groups) && node.groups.length;
     const hasData   = Array.isArray(node.data)   && node.data.length;
 
     if (!hasGroups && !hasData){
-      // Leaf — emit one card
       cards.push({ title, breadcrumb: breadcrumb.slice(), fields });
     } else {
-      // Parent — if it also has its own fields, emit a card for them
       if (fields.length) cards.push({ title, breadcrumb: breadcrumb.slice(), fields });
-
       if (hasGroups){
         node.groups.forEach(g => {
           const gName = g.name || 'Group';
           (g.data || []).forEach(child => extractCards(child, [...breadcrumb, gName]).forEach(c => cards.push(c)));
-          // groups can also carry fields[] directly (edge case)
           if (Array.isArray(g.fields) && g.fields.length) cards.push({ title: gName, breadcrumb: [...breadcrumb, gName], fields: g.fields });
         });
       }
@@ -819,7 +972,6 @@
     const detailBody = document.getElementById('detailBody');
     detailBody.innerHTML = '';
 
-    // Hero
     const hero = document.createElement('div');
     hero.className = 'detail-hero';
     const cards = extractCards(fileData, []);
@@ -832,7 +984,7 @@
       <div class="detail-hero-body">
         <div class="name">${escHtml(entry.title)}</div>
         <div class="path-tag">${escHtml(entry.path)}</div>
-        <div class="rec-count">${cards.length} credential${cards.length===1?'':'s'}</div>
+        <div class="rec-count">${cards.length} record${cards.length===1?'':'s'}</div>
       </div>`;
     detailBody.appendChild(hero);
 
@@ -840,7 +992,7 @@
       hideDetailSearchBar();
       const none = document.createElement('div');
       none.className = 'detail-empty';
-      none.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" style="opacity:.3"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6M9 13h6M9 17h3"/></svg><div class="msg">No credential records found</div>`;
+      none.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" style="opacity:.3"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6M9 13h6M9 17h3"/></svg><div class="msg">No records found</div>`;
       detailBody.appendChild(none);
       return;
     }
@@ -849,7 +1001,6 @@
       const wrap = document.createElement('div');
       wrap.className = 'cred-card';
 
-      // Build a single searchable string from all real field data (not DOM text)
       const searchText = [
         card.title,
         card.breadcrumb.join(' '),
@@ -857,7 +1008,6 @@
       ].join(' ').toLowerCase();
       wrap.dataset.search = searchText;
 
-      // Build breadcrumb subtitle
       const crumbStr = card.breadcrumb.length ? card.breadcrumb.join(' › ') : '';
 
       const head = document.createElement('div');
@@ -883,7 +1033,6 @@
         card.fields.forEach(f => fields.appendChild(buildFieldRow(f)));
       }
 
-      // Toggle collapse
       head.addEventListener('click', () => {
         const isOpen = head.classList.toggle('open');
         fields.classList.toggle('open', isOpen);
@@ -894,7 +1043,6 @@
       detailBody.appendChild(wrap);
     });
 
-    // Show search bar now that there are cards
     showDetailSearchBar();
     clearDetailSearch();
   }
@@ -919,11 +1067,16 @@
       </div>`;
   }
 
-  /* ---- state ---- */
-  let selectedPath = null;
-  let filteredEntries = [];
+  function resetDetailPanel(){
+    hideDetailSearchBar();
+    document.getElementById('detailBody').innerHTML = `
+      <div class="detail-empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6M9 13h6M9 17h3"/></svg>
+        <div class="msg">Select a file to view credentials</div>
+      </div>`;
+  }
 
-  /* ---- type icons & colors (same as original) ---- */
+  /* ---- type icons & colors ---- */
   const TYPE_ICONS = {
     Server:  '<path d="M4 4h16v6H4zM4 14h16v6H4z"/><circle cx="7" cy="7" r="1"/><circle cx="7" cy="17" r="1"/>',
     SSH:     '<polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>',
@@ -937,7 +1090,7 @@
   };
 
   const CAT_DEFS = [
-    {key:'', label:'All Credentials', icon:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/>'},
+    {key:'', label:'All Records', icon:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/>'},
     {key:'Server',        label:'Servers',       icon:TYPE_ICONS.Server},
     {key:'SSH',           label:'SSH Access',    icon:TYPE_ICONS.SSH},
     {key:'Email',         label:'Email Accounts',icon:TYPE_ICONS.Email},
@@ -949,7 +1102,6 @@
     {key:'Third Party',   label:'Third Party',   icon:TYPE_ICONS['Third Party']}
   ];
 
-  /* Derive a type for a credential card based on its title + field labels/values */
   function deriveCardType(card){
     const hay = (card.title + ' ' + card.breadcrumb.join(' ') + ' ' + card.fields.map(f=>f.label+' '+f.value).join(' ')).toLowerCase();
     if (/ssh/.test(hay)) return 'SSH';
@@ -963,11 +1115,12 @@
     return 'Third Party';
   }
 
-  /* Get all cards across all cached entries */
+  /* Get all cards across all cached entries in the CURRENT vault */
   function getAllCachedCards(){
+    const st = V();
     const cards = [];
-    manifestEntries.forEach(entry => {
-      const cached = detailCache[entry.path];
+    st.entries.forEach(entry => {
+      const cached = st.cache[entry.path];
       if (cached && !cached._error){
         extractCards(cached, []).forEach(c => cards.push({ ...c, _type: deriveCardType(c), _entry: entry }));
       }
@@ -975,9 +1128,7 @@
     return cards;
   }
 
-  let activeCategoryFilter = ''; // '' = all
-
-  /* ---- render left sidebar: Credential Categories ---- */
+  /* ---- render left sidebar: Categories ---- */
   function renderCategories(){
     const catList = document.getElementById('catList');
     catList.innerHTML = '';
@@ -1007,31 +1158,28 @@
 
   /* ---- render center manifest list ---- */
   function renderManifestList(){
+    const st = V();
     const list = document.getElementById('manifestList');
     const footerCount = document.getElementById('footerCount');
     list.innerHTML = '';
 
     const q = document.getElementById('searchInput').value.trim().toLowerCase();
 
-    // When a category filter is active, only show entries that have at least
-    // one card of that type (or all entries if not yet cached — we can't know yet)
-    filteredEntries = manifestEntries.filter(entry => {
-      // text search
+    filteredEntries = st.entries.filter(entry => {
       if (q && !entry.title.toLowerCase().includes(q) && !entry.path.toLowerCase().includes(q)) return false;
-      // category filter: skip if cached and has no matching cards
       if (activeCategoryFilter){
-        const cached = detailCache[entry.path];
+        const cached = st.cache[entry.path];
         if (cached && !cached._error){
           const cards = extractCards(cached, []);
           const hasMatch = cards.some(c => deriveCardType(c) === activeCategoryFilter);
           if (!hasMatch) return false;
         }
-        // if not yet cached, show it (we don't know yet)
       }
       return true;
     });
 
-    footerCount.textContent = `${filteredEntries.length} credential file${filteredEntries.length===1?'':'s'}`;
+    const noun = VAULT_META[currentVault].noun;
+    footerCount.textContent = `${filteredEntries.length} ${noun} file${filteredEntries.length===1?'':'s'}`;
 
     if (filteredEntries.length === 0){
       list.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--text-faint);font-size:12px">No files match your search</div>`;
@@ -1042,12 +1190,11 @@
       const item = document.createElement('div');
       item.className = 'manifest-item' + (selectedPath === entry.path ? ' active' : '');
 
-      // Cached count info
-      const cached = detailCache[entry.path];
+      const cached = st.cache[entry.path];
       let subText = entry.path;
       if (cached && !cached._error){
         const cards = extractCards(cached, []);
-        subText = `${cards.length} credential${cards.length===1?'':'s'} · ${entry.path}`;
+        subText = `${cards.length} record${cards.length===1?'':'s'} · ${entry.path}`;
       }
 
       item.innerHTML = `
@@ -1068,27 +1215,28 @@
     });
   }
 
+  /* ---- scroll detail into view on mobile after selection ---- */
+  function scrollDetailIntoView(){
+    if (isMobile()) document.querySelector('.col-right').scrollIntoView({ behavior:'smooth', block:'start' });
+  }
+
   /* ---- select an entry: fetch its file if not cached ---- */
   async function selectEntry(entry){
+    const st = V();
     selectedPath = entry.path;
     document.getElementById('crumbCur').textContent = entry.title;
     renderCategories();
     renderManifestList();
 
-    // Already cached
-    if (detailCache[entry.path]){
-      if (detailCache[entry.path]._error){
-        showDetailError(detailCache[entry.path]._error);
-      } else {
-        renderDetail(entry, detailCache[entry.path]);
-      }
+    if (st.cache[entry.path]){
+      if (st.cache[entry.path]._error) showDetailError(st.cache[entry.path]._error);
+      else renderDetail(entry, st.cache[entry.path]);
+      scrollDetailIntoView();
       return;
     }
 
-    // Fetch from backend
     showDetailLoading(entry.title);
 
-    // Mark list item as loading
     const items = document.querySelectorAll('.manifest-item');
     items.forEach(el => { if (el.querySelector('.mi-title')?.textContent === entry.title) el.classList.add('loading'); });
 
@@ -1096,84 +1244,87 @@
       const res = await fetch(SCRIPT_URL, {
         method:'POST',
         headers:{'Content-Type':'text/plain;charset=utf-8'},
-        body: JSON.stringify({ password: sessionStorage.getItem('vaultPin'), fetchFile: entry.path })
+        body: JSON.stringify({ password: st.pin, vault: currentVault, fetchFile: entry.path })
       });
       const result = await res.json();
 
       if (result.success && result.fileData){
-        detailCache[entry.path] = result.fileData;
+        st.cache[entry.path] = result.fileData;
         renderDetail(entry, result.fileData);
-        renderCategories(); // update counts now that we have data
+        renderCategories();
       } else {
-        // Fallback: backend may have returned the data embedded in manifest
-        // (old shape where entries included full data)
         const embedded = getEmbeddedData(entry);
         if (embedded){
-          detailCache[entry.path] = embedded;
+          st.cache[entry.path] = embedded;
           renderDetail(entry, embedded);
         } else {
           const errMsg = result.message || 'Failed to load file';
-          detailCache[entry.path] = { _error: errMsg };
+          st.cache[entry.path] = { _error: errMsg };
           showDetailError(errMsg);
         }
       }
     } catch(err){
-      detailCache[entry.path] = { _error: err.message };
+      st.cache[entry.path] = { _error: err.message };
       showDetailError('Network error: ' + err.message);
     }
 
-    // Remove loading state and re-render list to show count
     renderManifestList();
+    scrollDetailIntoView();
   }
 
   /* ---- check if the manifest response included full data for this entry ---- */
   function getEmbeddedData(entry){
-    // The current backend returns entries with fields/groups already populated
-    const raw = sessionStorage.getItem('vaultManifest');
+    const raw = sessionStorage.getItem('vaultManifest_' + currentVault);
     if (!raw) return null;
     try {
       const manifest = JSON.parse(raw);
       const entries = Array.isArray(manifest.entries) ? manifest.entries : [];
-      const found = entries.find(e => e.title === entry.title);
+      const found = entries.find(e => (e.path && e.path === entry.path) || e.title === entry.title);
       if (!found) return null;
-      // If the entry has fields or groups, it's the full data
       if (found.fields || found.groups || found.data) return found;
       return null;
     } catch(e){ return null; }
   }
 
-  /* ---- boot app ---- */
-  function showApp(data){
+  /* ---- load a vault's manifest into state (does not switch view) ---- */
+  function loadVaultData(vault, data){
+    const st = vaultState[vault];
+    const entries = Array.isArray(data.entries) ? data.entries : [];
+    st.entries = [];
+    st.cache = {};
+    entries.forEach(e => {
+      const path = e.path || (e.title.toLowerCase().replace(/\s+/g,'-') + '.json');
+      st.entries.push({ title: e.title, path });
+      if (e.fields || e.groups || e.data) st.cache[path] = e;
+      else if (e.error) st.cache[path] = { _error: e.error };
+    });
+    st.unlocked = true;
+  }
+
+  /* ---- reveal the main app shell ---- */
+  function enterApp(){
     document.getElementById('lockScreen').classList.add('hidden');
     document.getElementById('app').classList.remove('hidden');
-    sessionStorage.setItem('vaultPin', getPin()); // store pin for on-demand fetches
+  }
 
-    // Build manifest entry list from what the backend returned
-    // The backend currently returns entries with their data already loaded.
-    // We adapt: if an entry has full data, cache it immediately.
-    const entries = Array.isArray(data.entries) ? data.entries : [];
-    manifestEntries = [];
-
-    entries.forEach((e, idx) => {
-      const path = e.path || (e.title.toLowerCase().replace(/\s+/g,'-') + '.json');
-      const entry = { title: e.title, path };
-      manifestEntries.push(entry);
-      // Backend already loaded the file data — cache it immediately
-      if (e.fields || e.groups || e.data){
-        detailCache[path] = e;
-      } else if (e.error){
-        detailCache[path] = { _error: e.error };
-      }
-    });
-
+  /* ---- switch which vault is displayed ---- */
+  function switchVault(vault){
+    currentVault = vault;
     selectedPath = null;
     activeCategoryFilter = '';
     document.getElementById('searchInput').value = '';
-    document.getElementById('crumbCur').textContent = 'All Records';
-    document.getElementById('lastSync').textContent = 'just now';
+
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.nav === vault));
+
+    const meta = VAULT_META[vault];
+    document.getElementById('crumbVault').textContent = meta.crumb;
+    document.getElementById('crumbCur').textContent   = 'All Records';
+    document.getElementById('listTitle').textContent  = meta.listTitle;
+    document.getElementById('lastSync').textContent   = 'just now';
 
     renderCategories();
     renderManifestList();
+    resetDetailPanel();
   }
 
   /* ---- search ---- */
@@ -1192,11 +1343,7 @@
     let matched = 0;
 
     cards.forEach(card => {
-      if (!q){
-        card.style.display = '';
-        matched++;
-        return;
-      }
+      if (!q){ card.style.display=''; matched++; return; }
       const hit = (card.dataset.search || '').includes(q);
       card.style.display = hit ? '' : 'none';
       if (hit) matched++;
@@ -1225,31 +1372,36 @@
     document.getElementById('crumbCur').textContent = 'All Records';
     renderCategories();
     renderManifestList();
-    hideDetailSearchBar();
-    document.getElementById('detailBody').innerHTML = `
-      <div class="detail-empty">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6M9 13h6M9 17h3"/></svg>
-        <div class="msg">Select a file to view credentials</div>
-      </div>`;
+    resetDetailPanel();
   });
 
   /* ---- nav pill ---- */
   document.querySelectorAll('.nav-item').forEach(btn => {
     btn.addEventListener('click', () => {
-      if (btn.dataset.nav === 'credentials') return;
+      const nav = btn.dataset.nav;
+      if (nav === 'credentials'){ switchVault('credentials'); return; }
+      if (nav === 'secrets'){
+        if (vaultState.secrets.unlocked) switchVault('secrets');
+        else openSecretsModal();
+        return;
+      }
       showToast(btn.textContent.trim() + ' module offline');
     });
   });
 
   /* ---- logout ---- */
   function doLogout(){
-    sessionStorage.removeItem('vaultManifest');
-    sessionStorage.removeItem('vaultPin');
-    manifestEntries = []; filteredEntries = []; detailCache = {}; selectedPath = null;
+    ['credentials','secrets'].forEach(v => {
+      sessionStorage.removeItem('vaultManifest_' + v);
+      sessionStorage.removeItem('vaultPin_' + v);
+      vaultState[v] = { entries: [], cache: {}, pin: null, unlocked: false };
+    });
+    selectedPath = null; filteredEntries = []; activeCategoryFilter = '';
     hideDetailSearchBar();
+    closeSecretsModal();
     document.getElementById('app').classList.add('hidden');
     document.getElementById('lockScreen').classList.remove('hidden');
-    clearPin(false);
+    lockPin.clear(false);
     logConsole.innerHTML = '';
     logLine('session terminated','err');
     logLine('awaiting override key...');
@@ -1258,8 +1410,22 @@
   document.getElementById('logoutBtn').addEventListener('click', doLogout);
 
   /* ---- resume from sessionStorage ---- */
-  const saved = sessionStorage.getItem('vaultManifest');
-  if (saved){ try { showApp(JSON.parse(saved)); } catch(e){} }
+  (function resume(){
+    const c = sessionStorage.getItem('vaultManifest_credentials');
+    if (!c) return;
+    try {
+      vaultState.credentials.pin = sessionStorage.getItem('vaultPin_credentials');
+      loadVaultData('credentials', JSON.parse(c));
+
+      const s = sessionStorage.getItem('vaultManifest_secrets');
+      if (s){
+        vaultState.secrets.pin = sessionStorage.getItem('vaultPin_secrets');
+        loadVaultData('secrets', JSON.parse(s));
+      }
+      enterApp();
+      switchVault('credentials');
+    } catch(e){}
+  })();
 </script>
 </body>
 </html>
